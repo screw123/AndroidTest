@@ -14,8 +14,8 @@ jobs:
       - name: Granting gradlew permissions
         run: chmod +x gradlew
 
-      - name: Running static code analysis
-        run: bash ./gradlew detekt
+      #- name: Running static code analysis
+      #  run: bash ./gradlew detekt
 
       - name: Running unit tests
         run: bash ./gradlew test
