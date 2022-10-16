@@ -1,0 +1,61 @@
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    name: Generate Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v3
+
+      - name: Granting gradlew permissions
+        run: chmod +x gradlew
+
+      - name: Running static code analysis
+        run: bash ./gradlew detekt
+
+      - name: Running unit tests
+        run: bash ./gradlew test
+
+      - name: Running ui tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: default
+          arch: x86_64
+          profile: Nexus 6
+          script: ./gradlew connectedCheck --stacktrace
+
+      - name: Generate build
+        run: bash ./gradlew bundleRelease --stacktrace
+
+      - name: Sign AAB
+        id: sign_aab
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.BASE64_KEYSTORE }}
+          alias: ${{ secrets.SIGNING_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          keyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+      - name: Get release file path
+        id: release
+        run: echo "::set-output name=aabfile::$(find app/build/outputs/bundle/release/*.aab)"
+
+      - name: Get release file name
+        id: zipbundle
+        run: echo "::set-output name=filename::$(basename -s .aab app/build/outputs/bundle/release/*.aab)"
+
+      - name: Convert aab to apk
+        id: convert_aab
+        uses: mukeshsolanki/bundletool-action@v1.0.0
+        with:
+          aabFile: ${{ steps.release.outputs.aabfile }}
+          base64Keystore: ${{ secrets.BASE64_KEYSTORE }}
+          keystorePassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          keystoreAlias: ${{ secrets.SIGNING_KEY_ALIAS }}
+          keyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
