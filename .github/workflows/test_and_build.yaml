@@ -64,3 +64,9 @@ jobs:
           keystorePassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
           keystoreAlias: ${{ secrets.SIGNING_KEY_ALIAS }}
           keyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: apk
+          path: ${{ steps.convert_aab.outputs.apkPath }}
